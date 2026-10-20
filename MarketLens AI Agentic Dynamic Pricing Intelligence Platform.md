@@ -1,7 +1,5 @@
 # MarketLens AI: Agentic Dynamic Pricing Intelligence Platform
 
-Oct 20, 2026 · @vikranth roma
-
 **Software Requirements Specification and Technical Design for a Hybrid Machine Learning and Generative AI-Based Demand Forecasting and Price Optimization System**
 
 | Field | Value |
