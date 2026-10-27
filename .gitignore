@@ -64,6 +64,9 @@ data/external/*
 !data/external/.gitkeep
 data/manifests/*
 !data/manifests/.gitkeep
+!data/manifests/*.json
+!data/manifests/profiles/
+!data/manifests/profiles/*.json
 
 # Artifacts - ignore models and generated reports but keep folder
 artifacts/*

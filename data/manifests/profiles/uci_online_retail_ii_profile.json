@@ -1,0 +1,175 @@
+{
+  "dataset_id": "uci_online_retail_ii",
+  "source_file": "data/raw/uci_online_retail_ii/online_retail_II.xlsx",
+  "profiled_at_utc": "2026-10-27T11:15:03.767184+00:00",
+  "row_count": 100000,
+  "column_count": 8,
+  "columns": [
+    {
+      "name": "Invoice",
+      "inferred_type": "object",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 5524,
+      "min_value": null,
+      "max_value": null,
+      "median_value": null,
+      "sample_values": [
+        "489434",
+        "489434",
+        "489434",
+        "489434",
+        "489434"
+      ]
+    },
+    {
+      "name": "StockCode",
+      "inferred_type": "object",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 3752,
+      "min_value": null,
+      "max_value": null,
+      "median_value": null,
+      "sample_values": [
+        "85048",
+        "79323P",
+        "79323W",
+        "22041",
+        "21232"
+      ]
+    },
+    {
+      "name": "Description",
+      "inferred_type": "object",
+      "total_count": 100000,
+      "missing_count": 870,
+      "missing_pct": 0.87,
+      "distinct_count": 3426,
+      "min_value": null,
+      "max_value": null,
+      "median_value": null,
+      "sample_values": [
+        "15CM CHRISTMAS GLASS BALL 20 LIGHTS",
+        "PINK CHERRY LIGHTS",
+        " WHITE CHERRY LIGHTS",
+        "RECORD FRAME 7\" SINGLE SIZE ",
+        "STRAWBERRY CERAMIC TRINKET BOX"
+      ]
+    },
+    {
+      "name": "Quantity",
+      "inferred_type": "int64",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 372,
+      "min_value": -4200.0,
+      "max_value": 19152.0,
+      "median_value": 3.0,
+      "sample_values": [
+        "12",
+        "12",
+        "12",
+        "48",
+        "24"
+      ]
+    },
+    {
+      "name": "InvoiceDate",
+      "inferred_type": "datetime",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 4779,
+      "min_value": "2009-12-01T07:45:00",
+      "max_value": "2010-02-23T10:50:00",
+      "median_value": null,
+      "sample_values": [
+        "2009-12-01 07:45:00",
+        "2009-12-01 07:45:00",
+        "2009-12-01 07:45:00",
+        "2009-12-01 07:45:00",
+        "2009-12-01 07:45:00"
+      ]
+    },
+    {
+      "name": "Price",
+      "inferred_type": "float64",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 581,
+      "min_value": 0.0,
+      "max_value": 8985.6,
+      "median_value": 2.55,
+      "sample_values": [
+        "6.95",
+        "6.75",
+        "6.75",
+        "2.1",
+        "1.25"
+      ]
+    },
+    {
+      "name": "Customer ID",
+      "inferred_type": "float64",
+      "total_count": 100000,
+      "missing_count": 27139,
+      "missing_pct": 27.14,
+      "distinct_count": 1734,
+      "min_value": 12346.0,
+      "max_value": 18287.0,
+      "median_value": 15260.0,
+      "sample_values": [
+        "13085.0",
+        "13085.0",
+        "13085.0",
+        "13085.0",
+        "13085.0"
+      ]
+    },
+    {
+      "name": "Country",
+      "inferred_type": "str",
+      "total_count": 100000,
+      "missing_count": 0,
+      "missing_pct": 0.0,
+      "distinct_count": 28,
+      "min_value": null,
+      "max_value": null,
+      "median_value": null,
+      "sample_values": [
+        "United Kingdom",
+        "United Kingdom",
+        "United Kingdom",
+        "United Kingdom",
+        "United Kingdom"
+      ]
+    }
+  ],
+  "min_timestamp": "2009-12-01T07:45:00",
+  "max_timestamp": "2010-02-23T10:50:00",
+  "duplicate_rows_detected": 545,
+  "detected_identifier_columns": [
+    "Invoice",
+    "StockCode",
+    "InvoiceDate"
+  ],
+  "detected_target_column": "Quantity",
+  "detected_price_column": "Price",
+  "detected_time_column": "InvoiceDate",
+  "data_quality_issues": [
+    "Column 'Quantity' has negative values (min: -4200.0), indicating cancellations or returns.",
+    "Column 'Price' contains zero or negative values (min: 0.0)."
+  ],
+  "suitability_for_forecasting": "Suitable for historical demand forecasting baseline after filtering cancellations and aggregating to product-day/week grain.",
+  "unsupported_fields": [
+    "competitor_prices (not present in raw transaction records)",
+    "customer_reviews_and_ratings (no review text or sentiment scores)",
+    "unit_costs (wholesale cost of goods not supplied)",
+    "inventory_stockouts (inventory levels not reported)"
+  ]
+}

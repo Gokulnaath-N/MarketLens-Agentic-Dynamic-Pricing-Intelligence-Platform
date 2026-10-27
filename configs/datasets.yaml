@@ -7,35 +7,33 @@ acquisition:
   timeout_seconds: 60
   max_retries: 3
   verify_checksums: true
-  manifest_path: "data/manifests/dataset_catalog.json"
-  attribution_path: "data/ATTRIBUTION.md"
+  manifest_path: "data/manifests/datasets_manifest.json"
+  candidate_inventory_path: "data/manifests/dataset_candidate_inventory.json"
+  attribution_path: "docs/datasets/ATTRIBUTION.md"
   enforce_license_check: true
   provenance_tracking: true
 
 # Candidate sources defined in the project knowledge base
 sources:
-  olist:
-    name: "Olist Brazilian E-Commerce Public Dataset"
-    role: "primary_integrated"
-    enabled: true
-    acquisition_method: "kaggle_or_direct"
-    requires_auth: true
-    license_type: "CC BY-NC-SA 4.0 (verify current)"
-    official_url: "https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce"
-    files_required:
-      - "olist_orders_dataset.csv"
-      - "olist_order_items_dataset.csv"
-      - "olist_products_dataset.csv"
-      - "olist_order_reviews_dataset.csv"
-
   uci_online_retail_ii:
     name: "UCI Online Retail II"
-    role: "transaction_fallback"
+    role: "primary_sales"
     enabled: true
     acquisition_method: "direct_download"
     requires_auth: false
     license_type: "CC BY 4.0"
-    official_url: "https://archive.ics.uci.edu/dataset/502/online_retail%2Bii"
+    official_url: "https://archive.ics.uci.edu/dataset/502/online+retail+ii"
+    download_url: "https://archive.ics.uci.edu/static/public/502/online+retail+ii.zip"
+    doi: "10.24432/C5CG6D"
+
+  olist:
+    name: "Olist Brazilian E-Commerce Public Dataset"
+    role: "review_benchmark"
+    enabled: false # Blocked: requires Kaggle API credentials
+    acquisition_method: "kaggle_api"
+    requires_auth: true
+    license_type: "CC BY-NC-SA 4.0"
+    official_url: "https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce"
 
   m5_forecasting:
     name: "M5 Forecasting Accuracy"
