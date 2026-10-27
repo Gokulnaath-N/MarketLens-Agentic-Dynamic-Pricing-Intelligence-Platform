@@ -1,0 +1,36 @@
+# MarketLens AI — Market Intelligence and Review Analysis Agents Configuration
+
+general:
+  # LLM agents are strictly disabled in Phase 0; deterministic/mock providers used
+  agents_enabled: false
+  default_provider: "mock" # Options: mock, gemini, openai
+  request_timeout_seconds: 30
+  max_retries: 2
+  log_prompts_and_responses: false # Set to true only in debug environments without sensitive PII
+
+review_insight_agent:
+  enabled: false
+  model_name: "gemini-1.5-flash"
+  batch_size: 20
+  validate_schema: true
+  min_evidence_length_chars: 10
+  sentiment_scale:
+    min_score: -1.0
+    max_score: 1.0
+  aspect_categories:
+    - "product_quality"
+    - "value_for_money"
+    - "delivery_shipping"
+    - "customer_service"
+    - "packaging"
+
+competitor_monitoring_agent:
+  enabled: false
+  price_change_alert_threshold_pct: 5.0 # Alert when competitor changes price by >= 5%
+  max_observation_age_days: 7
+  allow_currency_conversion: false
+
+market_signal_aggregator:
+  enabled: false
+  time_alignment_window_days: 7
+  require_provenance: true

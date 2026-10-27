@@ -1,0 +1,24 @@
+# MarketLens AI — Core Application Configuration
+
+app:
+  name: "MarketLens AI"
+  title: "Agentic Dynamic Pricing Intelligence Platform"
+  version: "0.1.0"
+  environment: "development"
+  debug: false
+  random_seed: 42
+  timezone: "UTC"
+
+storage:
+  data_dir: "data"
+  raw_dir: "data/raw"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  external_dir: "data/external"
+  manifest_dir: "data/manifests"
+  artifacts_dir: "artifacts"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s | %(levelname)-8s | %(name)s:%(lineno)d - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"

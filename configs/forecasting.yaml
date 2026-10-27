@@ -1,0 +1,56 @@
+# MarketLens AI — Demand Forecasting and Time-Series Modeling Configuration
+
+data:
+  # Target grain and key definitions (to be finalized after dataset inspection in Phase 1)
+  entity_grain: "product_day" # Options: product_day, product_week, category_week
+  target_column: "units_sold"
+  time_column: "sales_timestamp"
+  product_id_column: "product_id"
+  store_id_column: "store_id"
+  price_column: "observed_unit_price"
+
+splits:
+  # Temporal validation splits (chronological order strictly preserved)
+  method: "chronological_holdout"
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
+  # Absolute split dates can override ratios once dataset date range is inspected:
+  # split_train_end: null
+  # split_val_end: null
+
+leakage_prevention:
+  enforce_strict_chronological_features: true
+  min_history_periods: 14
+  allow_forward_filling_signals: false
+
+models:
+  random_seed: 42
+  horizon_periods: 7 # Days or weeks depending on grain
+
+  naive_baseline:
+    enabled: true
+    strategy: "last_observed" # or seasonal_naive
+
+  simple_regression:
+    enabled: true
+    regularization: 1.0
+
+  random_forest:
+    enabled: true
+    n_estimators: 100
+    max_depth: 10
+
+  xgboost:
+    enabled: true
+    n_estimators: 150
+    max_depth: 6
+    learning_rate: 0.05
+    early_stopping_rounds: 10
+
+evaluation:
+  metrics:
+    - "mae"
+    - "rmse"
+    - "wape"
+    - "r2"

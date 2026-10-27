@@ -1,0 +1,56 @@
+# MarketLens AI — Dataset Discovery and Acquisition Configuration
+
+# Settings for Phase 1 data acquisition pipeline
+acquisition:
+  download_dir: "data/raw"
+  max_download_size_mb: 250
+  timeout_seconds: 60
+  max_retries: 3
+  verify_checksums: true
+  manifest_path: "data/manifests/dataset_catalog.json"
+  attribution_path: "data/ATTRIBUTION.md"
+  enforce_license_check: true
+  provenance_tracking: true
+
+# Candidate sources defined in the project knowledge base
+sources:
+  olist:
+    name: "Olist Brazilian E-Commerce Public Dataset"
+    role: "primary_integrated"
+    enabled: true
+    acquisition_method: "kaggle_or_direct"
+    requires_auth: true
+    license_type: "CC BY-NC-SA 4.0 (verify current)"
+    official_url: "https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce"
+    files_required:
+      - "olist_orders_dataset.csv"
+      - "olist_order_items_dataset.csv"
+      - "olist_products_dataset.csv"
+      - "olist_order_reviews_dataset.csv"
+
+  uci_online_retail_ii:
+    name: "UCI Online Retail II"
+    role: "transaction_fallback"
+    enabled: true
+    acquisition_method: "direct_download"
+    requires_auth: false
+    license_type: "CC BY 4.0"
+    official_url: "https://archive.ics.uci.edu/dataset/502/online_retail%2Bii"
+
+  m5_forecasting:
+    name: "M5 Forecasting Accuracy"
+    role: "forecasting_benchmark"
+    enabled: false  # Large download (>500MB); disabled by default for Phase 0/1
+    acquisition_method: "kaggle_competition_api"
+    requires_auth: true
+    license_type: "Kaggle Competition Rules"
+    official_url: "https://www.kaggle.com/competitions/m5-forecasting-accuracy/data"
+
+  amazon_reviews_2023:
+    name: "Amazon Reviews 2023 (Category Subset)"
+    role: "review_nlp_benchmark"
+    enabled: false  # Massive dataset; category streaming only if needed
+    acquisition_method: "huggingface_streaming"
+    requires_auth: false
+    license_type: "Academic / Custom terms"
+    official_url: "https://amazon-reviews-2023.github.io/"

@@ -1,0 +1,29 @@
+# MarketLens AI — Constrained Price Optimization Configuration
+
+optimization:
+  # Primary objective: 'revenue' or 'profit'
+  # Note: Profit objective strictly requires known unit_cost or an explicit simulation flag.
+  default_objective: "revenue"
+
+  # Candidate price grid generation
+  grid:
+    num_candidates: 21
+    # Multipliers relative to current or base price [example placeholders]:
+    min_multiplier: 0.70 # -30% lower bound
+    max_multiplier: 1.30 # +30% upper bound
+
+constraints:
+  # Hard business constraints
+  min_margin_percentage: 0.15 # 15% minimum margin (when unit cost is available)
+  max_price_movement_percentage: 0.20 # Maximum 20% price adjustment in a single period
+  enforce_non_negative_demand: true
+
+extrapolation:
+  # Flag predictions where candidate price falls outside the observed training range
+  warn_on_unsupported_price: true
+  confidence_discount_factor: 0.85
+
+governance:
+  # Recommendations require explicit human review and approval before action
+  require_human_approval: true
+  auto_reprice_enabled: false # Strictly disabled in MVP
