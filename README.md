@@ -1,6 +1,6 @@
 # MarketLens AI — Agentic Dynamic Pricing Intelligence Platform
 
-> **Status:** Under Active Development (Phase 4 Complete: Agentic Market Intelligence & Signal Aggregation)  
+> **Status:** Under Active Development (Phase 5 Complete: Hybrid ML Integration & Feature Ablation)  
 > **Source of Truth:** Refer to [MARKETLENS_AI_KNOWLEDGE_BASE.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/MARKETLENS_AI_KNOWLEDGE_BASE.md) for complete technical specifications, mathematical definitions, and architectural policies.
 
 ---
@@ -39,8 +39,9 @@ flowchart TD
     G --> H[Forecasting Suite: Naive -> MA-4w -> Ridge -> Random Forest]
     H --> I[Parquet Predictions & Zero-Safe Metrics Evaluation]
     I --> J[Constrained Pricing Engine: Revenue, Profit & Margin Floors]
-    J --> K[Market Intelligence Agents: Reviews, Competitors & Signal Aggregator]
-    K --> L[FastAPI Backend & Streamlit Dashboard: Phase 6]
+    J --> K[Market Intelligence Agents: Reviews & Competitors]
+    K --> L[Feature Ablation & Hybrid ML Evaluation: Phase 5]
+    L --> M[FastAPI Backend & Streamlit Dashboard: Phase 6]
 ```
 
 ### Key Architectural Layers:
@@ -50,7 +51,8 @@ flowchart TD
 4. **Demand Forecasting & Baselines:** Strict chronological holdout splits (70% train, 15% validation, 15% test) comparing Naive, Moving Average, Ridge, and Random Forest models across MAE, RMSE, WAPE, MASE, and $R^2$.
 5. **Constrained Pricing Engine:** Decimal-safe discrete price grid generation, revenue and profit optimization, gross-margin floors, price movement limits, and model-support extrapolation guards with evidence-based explanations.
 6. **Market Intelligence Agents (Phase 4):** Structured review insight extraction (LLM with offline mock/rule-based fallback), deterministic competitor price tracking and alerts, and leakage-safe signal aggregation.
-7. **Product & Serving (Upcoming Phase 6):** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
+7. **Hybrid ML & Feature Ablation (Phase 5):** Four-way controlled feature ablation (E0 Baseline, E1 Reviews, E2 Competitors, E3 Both), anti-leakage temporal alignment ($t_{\text{obs}} \le t_{\text{origin}}$), signed metric deltas, and pricing impact evaluation.
+8. **Product & Serving (Upcoming Phase 6):** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
 
 ---
 
@@ -81,7 +83,8 @@ Agentic_Dynammic_Intelligence_Platform/
 │   ├── datasets.yaml                # Source registry & acquisition parameters
 │   ├── forecasting.yaml             # Modeling, splits, weekly grain, and metrics
 │   ├── pricing.yaml                 # Optimization objectives, grids, & margin constraints
-│   └── agents.yaml                  # Agent settings & LLM provider configurations
+│   ├── agents.yaml                  # Agent settings & LLM provider configurations
+│   └── phase5_experiments.yaml      # Feature ablation variants (E0-E3) & evaluation
 │
 ├── data/                            # Segregated data storage (ignored by git)
 │   ├── raw/                         # Immutable downloaded source files (git-ignored)
@@ -109,6 +112,10 @@ Agentic_Dynammic_Intelligence_Platform/
 │   ├── agentic_intelligence_design.md # Agent workflows, PII defense & schemas
 │   ├── market_signal_data_dictionary.md # Canonical signal feature dictionary
 │   ├── agent_evaluation_plan.md     # Evaluation benchmarks, injection & joinability gates
+│   ├── phase5_readiness_audit.md    # Phase 5 data readiness and prerequisite audit
+│   ├── phase5_experiment_protocol.md# Scientific 4-way ablation protocol & deltas
+│   ├── phase5_feature_catalog.md    # Canonical feature definitions and missingness policies
+│   ├── phase5_results_report.md     # Benchmark evaluation metrics, deltas & conclusions
 │   └── datasets/                    # Phase 1 dataset documentation
 │       ├── ACQUISITION_REPORT.md    # Full acquisition audit and findings
 │       ├── ATTRIBUTION.md           # Formal citations and license register
@@ -135,8 +142,9 @@ Agentic_Dynammic_Intelligence_Platform/
 │   │   ├── canonicalize.py          # Entity normalization & product catalog
 │   │   ├── aggregation.py           # Weekly grid alignment & zero imputation
 │   │   └── split.py                 # Strict chronological holdout partitioning
-│   ├── features/                    # Phase 2: Temporal feature engineering
-│   │   └── temporal.py              # Horizon-shifted lags & perturbation checks
+│   ├── features/                    # Phase 2 & 5: Feature engineering & signal joins
+│   │   ├── temporal.py              # Horizon-shifted lags & perturbation checks
+│   │   └── market_signals.py        # Time-aligned review/competitor feature generation & anti-leakage
 │   ├── forecasting/                 # Phase 2: Baseline modeling & evaluation
 │   │   ├── metrics.py               # Zero-safe MAE, RMSE, WAPE, MASE, R2
 │   │   ├── baselines.py             # Naive, Moving Average, Ridge, Random Forest
@@ -156,19 +164,25 @@ Agentic_Dynammic_Intelligence_Platform/
 │   │   ├── competitor_monitor.py    # Deterministic price change detection & threshold alerts
 │   │   ├── signal_aggregator.py     # Leakage-safe, time-aligned market feature aggregator
 │   │   └── service.py               # High-level MarketIntelligenceService coordinator
-│   └── llm/                         # Phase 4: Provider-neutral LLM abstraction
-│       ├── base.py                  # BaseLLMService and typed error hierarchy
-│       ├── factory.py               # Config-driven provider instantiation
-│       ├── mock.py                  # Deterministic offline mock service
-│       └── rule_based.py            # Lexicon sentiment & aspect extractor fallback
+│   ├── llm/                         # Phase 4: Provider-neutral LLM abstraction
+│   │   ├── base.py                  # BaseLLMService and typed error hierarchy
+│   │   ├── factory.py               # Config-driven provider instantiation
+│   │   ├── mock.py                  # Deterministic offline mock service
+│   │   └── rule_based.py            # Lexicon sentiment & aspect extractor fallback
+│   └── experiments/                 # Phase 5: Feature ablation and scientific evaluation
+│       ├── schemas.py               # Ablation run manifest and variant result models
+│       ├── ablation.py              # Master 4-way ablation runner (E0-E3) & pricing evaluator
+│       └── run_ablation.py          # Standalone runner entry point
 │
-├── tests/                           # Complete test suite (140 passing tests)
+├── tests/                           # Complete test suite (151 passing tests)
 │   ├── conftest.py                  # Pytest fixtures and cleanup
-│   ├── unit/                        # Deterministic unit tests (138 tests)
-│   └── integration/                 # End-to-end integration tests (2 tests)
+│   ├── unit/                        # Deterministic unit tests (148 tests)
+│   └── integration/                 # End-to-end integration tests (3 tests)
 │
 ├── dashboard/                       # Streamlit application (Phase 6)
 └── artifacts/                       # Trained models, predictions, reports (git-ignored)
+    ├── phase5/                      # Phase 5 ablation metrics, manifests, and predictions
+    └── model_comparison.csv         # Phase 2 baseline models
 ```
 
 ---
@@ -215,7 +229,7 @@ Agentic_Dynammic_Intelligence_Platform/
 
 ## 7. Command-Line Interface (CLI)
 
-MarketLens AI provides commands for dataset management, demand forecasting, pricing optimization, and agentic market intelligence:
+MarketLens AI provides commands for dataset management, demand forecasting, feature ablation, pricing optimization, and agentic market intelligence:
 
 ### Dataset Management
 ```powershell
@@ -232,10 +246,13 @@ python -m marketlens.cli datasets download --source uci_online_retail_ii
 python -m marketlens.cli datasets profile --source uci_online_retail_ii
 ```
 
-### Demand Forecasting Pipeline
+### Demand Forecasting & Feature Ablation
 ```powershell
 # Run the complete Phase 2 end-to-end forecasting pipeline:
 python -m marketlens.cli forecast pipeline --sample-rows 50000 --top-products 50
+
+# Run the Phase 5 4-way feature ablation study (E0 Baseline vs E1 Reviews vs E2 Competitors vs E3 Both):
+python -m marketlens.cli forecast ablate --config configs/phase5_experiments.yaml
 ```
 
 ### Constrained Pricing Optimization
@@ -267,7 +284,7 @@ python -m marketlens.cli market competitor --product-id PROD-123 --competitor-id
 | **2** | **Canonical Data Processing & Baseline Demand Forecasting** | **Completed** |
 | **3** | **Constrained Pricing Optimization Engine** | **Completed** |
 | **4** | **Agentic Market Intelligence & Signal Aggregation** | **Completed** |
-| **5** | Hybrid Feature Evaluation & 4-Way Model Ablation | Up Next |
-| **6** | FastAPI Backend & Interactive Streamlit Dashboard | Planned |
+| **5** | **Hybrid Feature Evaluation & 4-Way Model Ablation** | **Completed** |
+| **6** | FastAPI Backend & Interactive Streamlit Dashboard | Up Next |
 | **7** | Production Hardening, Documentation & MLOps | Planned |
 

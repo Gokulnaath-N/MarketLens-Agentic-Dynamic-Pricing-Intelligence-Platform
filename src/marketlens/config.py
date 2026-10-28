@@ -62,8 +62,13 @@ def load_yaml_config(
     """
     file_path = Path(filename)
     if not file_path.is_absolute():
-        base_dir = Path(configs_dir) if configs_dir is not None else get_configs_dir()
-        file_path = (base_dir / file_path).resolve()
+        if file_path.exists():
+            file_path = file_path.resolve()
+        elif (get_project_root() / file_path).exists():
+            file_path = (get_project_root() / file_path).resolve()
+        else:
+            base_dir = Path(configs_dir) if configs_dir is not None else get_configs_dir()
+            file_path = (base_dir / file_path).resolve()
 
     if not file_path.exists():
         raise FileNotFoundError(

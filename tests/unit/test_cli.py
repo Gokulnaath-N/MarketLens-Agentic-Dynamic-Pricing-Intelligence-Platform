@@ -133,4 +133,11 @@ class TestCLICommands:
         assert "COMPETITOR MONITORING AGENT" in captured.out
         assert "decrease" in captured.out.lower()
 
+    def test_cli_forecast_ablate(self, capsys):
+        exit_code = main(["forecast", "ablate", "--config", "configs/phase5_experiments.yaml"])
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "PHASE 5 FEATURE ABLATION EXPERIMENTS" in captured.out
+        assert "E0_baseline" in captured.out
+
 

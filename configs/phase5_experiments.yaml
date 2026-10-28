@@ -1,0 +1,104 @@
+# MarketLens AI — Phase 5 Feature Ablation & Hybrid Evaluation Configuration
+
+experiment:
+  name: "phase5_hybrid_feature_ablation"
+  version: "1.0.0"
+  random_seed: 42
+  tracking_dir: "artifacts/phase5"
+
+data:
+  primary_dataset: "data/processed/demand_timeseries.parquet"
+  sales_observations: "data/processed/sales_observations.parquet"
+  target_column: "units_sold"
+  time_column: "period_start"
+  product_id_column: "product_id"
+  price_column: "mean_unit_price"
+  forecast_horizon: 1
+
+splits:
+  method: "chronological_holdout"
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
+
+feature_groups:
+  baseline:
+    - "target_lag_1"
+    - "target_lag_2"
+    - "target_lag_4"
+    - "price_lag_1"
+    - "rolling_mean_4"
+    - "rolling_std_4"
+    - "rolling_mean_8"
+    - "rolling_std_8"
+    - "price_rolling_mean_4"
+    - "cal_month"
+    - "cal_quarter"
+    - "cal_week_of_year"
+    - "sin_month"
+    - "cos_month"
+  review_intelligence:
+    - "review_count_30d"
+    - "usable_review_count_30d"
+    - "mean_sentiment_30d"
+    - "positive_review_ratio_30d"
+    - "negative_review_ratio_30d"
+    - "aspect_quality_mentions_30d"
+    - "aspect_value_mentions_30d"
+    - "review_signal_missing"
+  competitor_intelligence:
+    - "competitor_count_7d"
+    - "min_competitor_price_7d"
+    - "mean_competitor_price_7d"
+    - "competitor_price_gap_pct"
+    - "latest_competitor_price_change_pct"
+    - "competitor_price_drop_flag"
+    - "competitor_signal_missing"
+
+variants:
+  E0:
+    id: "E0_baseline"
+    description: "Conventional historical sales, price, and calendar features only."
+    include_reviews: false
+    include_competitors: false
+  E1:
+    id: "E1_reviews"
+    description: "Baseline plus customer review sentiment and perception features."
+    include_reviews: true
+    include_competitors: false
+  E2:
+    id: "E2_competitors"
+    description: "Baseline plus competitor price observation and change features."
+    include_reviews: false
+    include_competitors: true
+  E3:
+    id: "E3_both"
+    description: "Baseline plus both review sentiment and competitor intelligence."
+    include_reviews: true
+    include_competitors: true
+
+models:
+  primary_ablation_model: "random_forest"
+  candidate_models:
+    naive_last_observed:
+      enabled: true
+      lag_col: "target_lag_1"
+    moving_average_4w:
+      enabled: true
+      rolling_col: "rolling_mean_4"
+    ridge_regression:
+      enabled: true
+      alpha: 10.0
+    random_forest:
+      enabled: true
+      n_estimators: 100
+      max_depth: 8
+      random_state: 42
+
+pricing_evaluation:
+  enabled: true
+  objective: "revenue"
+  price_step_pct: 0.05
+  price_range_steps: 5
+  min_gross_margin: 0.15
+  max_price_movement_pct: 0.25

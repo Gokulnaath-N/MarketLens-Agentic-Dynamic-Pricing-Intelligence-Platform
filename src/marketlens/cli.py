@@ -12,7 +12,8 @@ from marketlens.agents.competitor_monitor import CompetitorMonitorAgent
 from marketlens.agents.review_insights import ReviewInsightAgent
 from marketlens.agents.schemas import CompetitorObservation, ExtractionMethod, ReviewInputRecord
 
-from marketlens.config import get_project_root
+from marketlens.config import get_project_root, load_yaml_config
+from marketlens.experiments.ablation import FeatureAblationRunner
 from marketlens.datasets.adapters.uci_online_retail_ii import UCIOnlineRetailIIAdapter
 from marketlens.datasets.manifests import (
     load_candidate_inventory,
@@ -292,6 +293,33 @@ def cmd_forecast_pipeline(args: argparse.Namespace) -> int:
         return 3
 
 
+def cmd_forecast_ablate(args: argparse.Namespace) -> int:
+    """Execute Phase 5 four-way feature ablation study."""
+    print("=" * 80)
+    print("MARKETLENS AI — PHASE 5 FEATURE ABLATION EXPERIMENTS")
+    print("=" * 80)
+
+    try:
+        cfg = load_yaml_config(args.config)
+        runner = FeatureAblationRunner(config=cfg)
+        manifest, comparison_df = runner.run_ablation(
+            allow_synthetic_simulation=args.simulate_synthetic,
+        )
+
+        print("\n" + "=" * 80)
+        print("PHASE 5 ABLATION RESULTS SUMMARY (Held-Out Test Set):")
+        print("=" * 80)
+        print(comparison_df.to_string(index=False))
+        print("-" * 80)
+        print(f"Run ID:      {manifest.run_id}")
+        print(f"Artifacts:   {runner.tracking_dir}")
+        return 0
+    except Exception as e:
+        print(f"Ablation study error: {e}", file=sys.stderr)
+        logger.exception("Ablation study failed.")
+        return 1
+
+
 def cmd_pricing_optimize(args: argparse.Namespace) -> int:
     """Execute constrained pricing optimization for a candidate SKU."""
     print("=" * 80)
@@ -475,6 +503,12 @@ def main(args: list[str] | None = None) -> int:
     pipeline_parser.add_argument("--min-active", type=int, default=10, help="Minimum active periods to keep a product (default: 10)")
     pipeline_parser.add_argument("--horizon", type=int, default=1, help="Forecast horizon steps ahead (default: 1)")
     pipeline_parser.set_defaults(func=cmd_forecast_pipeline)
+
+    # forecast ablate
+    ablate_parser = forecast_sub.add_parser("ablate", help="Run Phase 5 4-way feature ablation study (E0-E3)")
+    ablate_parser.add_argument("--config", default="phase5_experiments.yaml", help="Path to experiment YAML configuration")
+    ablate_parser.add_argument("--simulate-synthetic", action="store_true", help="Run simulation with synthetic fixtures to test E1-E3")
+    ablate_parser.set_defaults(func=cmd_forecast_ablate)
 
     # pricing command group
     pricing_parser = subparsers.add_parser("pricing", help="Price optimization and scenario evaluation")
