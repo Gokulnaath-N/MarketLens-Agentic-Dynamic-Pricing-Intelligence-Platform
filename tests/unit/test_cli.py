@@ -93,3 +93,44 @@ class TestCLICommands:
         captured = capsys.readouterr()
         assert "Pricing optimization error" in captured.err
 
+    def test_cli_market_review(self, capsys):
+        exit_code = main(
+            [
+                "market",
+                "review",
+                "--product-id",
+                "uci_85123A",
+                "--text",
+                "Great quality and beautiful design!",
+                "--method",
+                "rule_based",
+            ]
+        )
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "CUSTOMER REVIEW INSIGHT AGENT" in captured.out
+        assert "POSITIVE" in captured.out
+
+    def test_cli_market_competitor(self, capsys):
+        exit_code = main(
+            [
+                "market",
+                "competitor",
+                "--product-id",
+                "uci_85123A",
+                "--competitor-id",
+                "rival_store",
+                "--prev-price",
+                "10.00",
+                "--curr-price",
+                "8.50",
+                "--threshold",
+                "5.0",
+            ]
+        )
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "COMPETITOR MONITORING AGENT" in captured.out
+        assert "decrease" in captured.out.lower()
+
+

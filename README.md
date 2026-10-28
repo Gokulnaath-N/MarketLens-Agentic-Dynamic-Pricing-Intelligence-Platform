@@ -1,6 +1,6 @@
 # MarketLens AI — Agentic Dynamic Pricing Intelligence Platform
 
-> **Status:** Under Active Development (Phase 3 Complete: Constrained Pricing Optimization Engine)  
+> **Status:** Under Active Development (Phase 4 Complete: Agentic Market Intelligence & Signal Aggregation)  
 > **Source of Truth:** Refer to [MARKETLENS_AI_KNOWLEDGE_BASE.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/MARKETLENS_AI_KNOWLEDGE_BASE.md) for complete technical specifications, mathematical definitions, and architectural policies.
 
 ---
@@ -39,7 +39,7 @@ flowchart TD
     G --> H[Forecasting Suite: Naive -> MA-4w -> Ridge -> Random Forest]
     H --> I[Parquet Predictions & Zero-Safe Metrics Evaluation]
     I --> J[Constrained Pricing Engine: Revenue, Profit & Margin Floors]
-    J --> K[Market Intelligence Agents: Reviews & Competitors - Phase 4]
+    J --> K[Market Intelligence Agents: Reviews, Competitors & Signal Aggregator]
     K --> L[FastAPI Backend & Streamlit Dashboard: Phase 6]
 ```
 
@@ -49,7 +49,7 @@ flowchart TD
 3. **Leakage-Safe Feature Engineering:** Lag features ($t-h$) and rolling metrics shifted strictly by the forecast horizon ($h=1$), mathematically proven through perturbation tests.
 4. **Demand Forecasting & Baselines:** Strict chronological holdout splits (70% train, 15% validation, 15% test) comparing Naive, Moving Average, Ridge, and Random Forest models across MAE, RMSE, WAPE, MASE, and $R^2$.
 5. **Constrained Pricing Engine:** Decimal-safe discrete price grid generation, revenue and profit optimization, gross-margin floors, price movement limits, and model-support extrapolation guards with evidence-based explanations.
-6. **Market Intelligence Agents (Upcoming Phase 4):** Customer review aspect/sentiment extraction and competitor price change detection.
+6. **Market Intelligence Agents (Phase 4):** Structured review insight extraction (LLM with offline mock/rule-based fallback), deterministic competitor price tracking and alerts, and leakage-safe signal aggregation.
 7. **Product & Serving (Upcoming Phase 6):** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
 
 ---
@@ -105,6 +105,10 @@ Agentic_Dynammic_Intelligence_Platform/
 │   ├── phase_3_input_audit.md       # Phase 3 readiness and prerequisite audit
 │   ├── pricing_engine_design.md     # Pricing optimizer architecture and formulas
 │   ├── pricing_engine_limitations.md# Causal boundaries, extrapolation, and governance
+│   ├── phase_4_input_audit.md       # Phase 4 data availability and provider audit
+│   ├── agentic_intelligence_design.md # Agent workflows, PII defense & schemas
+│   ├── market_signal_data_dictionary.md # Canonical signal feature dictionary
+│   ├── agent_evaluation_plan.md     # Evaluation benchmarks, injection & joinability gates
 │   └── datasets/                    # Phase 1 dataset documentation
 │       ├── ACQUISITION_REPORT.md    # Full acquisition audit and findings
 │       ├── ATTRIBUTION.md           # Formal citations and license register
@@ -114,7 +118,7 @@ Agentic_Dynammic_Intelligence_Platform/
 │   ├── __init__.py                  # Package definition
 │   ├── config.py                    # Safe YAML config loader & env resolver
 │   ├── logging_config.py            # Idempotent logging setup
-│   ├── cli.py                       # CLI entry point (datasets, forecasting, & pricing)
+│   ├── cli.py                       # CLI entry point (datasets, forecasting, pricing, & market)
 │   ├── datasets/                    # Phase 1: Discovery, acquisition & profiling
 │   │   ├── models.py                # Typed Pydantic models
 │   │   ├── registry.py              # Candidate discovery & scoring
@@ -138,19 +142,30 @@ Agentic_Dynammic_Intelligence_Platform/
 │   │   ├── baselines.py             # Naive, Moving Average, Ridge, Random Forest
 │   │   ├── evaluate.py              # Split-aware multi-model evaluation
 │   │   └── artifacts.py             # Parquet predictions & lineage manifest
-│   └── pricing/                     # Phase 3: Constrained pricing optimizer
-│       ├── schemas.py               # Pydantic input/output contracts
-│       ├── candidate_generation.py  # Decimal-safe price grid generation
-│       ├── constraints.py           # Margin, movement, bounds, and support checks
-│       ├── objectives.py            # Revenue, profit, and gross margin math
-│       ├── scenario.py              # Scenario batching & demand predictor adapters
-│       ├── optimizer.py             # Master optimization loop & tie-breaking
-│       └── explanation.py           # Deterministic recommendation explanations
+│   ├── pricing/                     # Phase 3: Constrained pricing optimizer
+│   │   ├── schemas.py               # Pydantic input/output contracts
+│   │   ├── candidate_generation.py  # Decimal-safe price grid generation
+│   │   ├── constraints.py           # Margin, movement, bounds, and support checks
+│   │   ├── objectives.py            # Revenue, profit, and gross margin math
+│   │   ├── scenario.py              # Scenario batching & demand predictor adapters
+│   │   ├── optimizer.py             # Master optimization loop & tie-breaking
+│   │   └── explanation.py           # Deterministic recommendation explanations
+│   ├── agents/                      # Phase 4: Agentic market intelligence workflows
+│   │   ├── schemas.py               # Pydantic perception, competitor & signal schemas
+│   │   ├── review_insights.py       # PII redaction, prompt injection defense, perception extraction
+│   │   ├── competitor_monitor.py    # Deterministic price change detection & threshold alerts
+│   │   ├── signal_aggregator.py     # Leakage-safe, time-aligned market feature aggregator
+│   │   └── service.py               # High-level MarketIntelligenceService coordinator
+│   └── llm/                         # Phase 4: Provider-neutral LLM abstraction
+│       ├── base.py                  # BaseLLMService and typed error hierarchy
+│       ├── factory.py               # Config-driven provider instantiation
+│       ├── mock.py                  # Deterministic offline mock service
+│       └── rule_based.py            # Lexicon sentiment & aspect extractor fallback
 │
-├── tests/                           # Complete test suite (112 passing tests)
+├── tests/                           # Complete test suite (140 passing tests)
 │   ├── conftest.py                  # Pytest fixtures and cleanup
-│   ├── unit/                        # Deterministic unit tests (111 tests)
-│   └── integration/                 # End-to-end integration tests (1 test)
+│   ├── unit/                        # Deterministic unit tests (138 tests)
+│   └── integration/                 # End-to-end integration tests (2 tests)
 │
 ├── dashboard/                       # Streamlit application (Phase 6)
 └── artifacts/                       # Trained models, predictions, reports (git-ignored)
@@ -200,7 +215,7 @@ Agentic_Dynammic_Intelligence_Platform/
 
 ## 7. Command-Line Interface (CLI)
 
-MarketLens AI provides commands for dataset management, demand forecasting, and constrained pricing optimization:
+MarketLens AI provides commands for dataset management, demand forecasting, pricing optimization, and agentic market intelligence:
 
 ### Dataset Management
 ```powershell
@@ -232,6 +247,15 @@ python -m marketlens.cli pricing optimize --product-id uci_85123A --current-pric
 python -m marketlens.cli pricing optimize --product-id uci_85123A --current-price 2.95 --price-min 2.00 --price-max 4.00 --step 0.20 --objective profit --unit-cost 1.50 --min-margin 0.20 --max-change-pct 0.25
 ```
 
+### Agentic Market Intelligence
+```powershell
+# Extract structured perception signals from customer review text (offline mode):
+python -m marketlens.cli market review --review-text "Excellent build quality and fast shipping, love it!" --product-id PROD-123 --mode rule_based
+
+# Detect deterministic competitor price change and threshold alert:
+python -m marketlens.cli market competitor --product-id PROD-123 --competitor-id COMP-A --prev-price 20.00 --curr-price 18.00 --threshold-pct 5.0
+```
+
 ---
 
 ## 8. Development Roadmap
@@ -242,8 +266,8 @@ python -m marketlens.cli pricing optimize --product-id uci_85123A --current-pric
 | **1** | **Dataset Discovery, Rights Review, Acquisition & Profiling** | **Completed** |
 | **2** | **Canonical Data Processing & Baseline Demand Forecasting** | **Completed** |
 | **3** | **Constrained Pricing Optimization Engine** | **Completed** |
-| **4** | Market Intelligence Workflows (Reviews & Competitor Agents) | Up Next |
-| **5** | Hybrid Feature Evaluation & 4-Way Model Ablation | Planned |
+| **4** | **Agentic Market Intelligence & Signal Aggregation** | **Completed** |
+| **5** | Hybrid Feature Evaluation & 4-Way Model Ablation | Up Next |
 | **6** | FastAPI Backend & Interactive Streamlit Dashboard | Planned |
 | **7** | Production Hardening, Documentation & MLOps | Planned |
 

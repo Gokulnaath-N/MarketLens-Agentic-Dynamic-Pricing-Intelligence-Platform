@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import argparse
+from datetime import datetime, timezone
 import json
 import sys
 from pathlib import Path
+
+from marketlens.agents.competitor_monitor import CompetitorMonitorAgent
+from marketlens.agents.review_insights import ReviewInsightAgent
+from marketlens.agents.schemas import CompetitorObservation, ExtractionMethod, ReviewInputRecord
 
 from marketlens.config import get_project_root
 from marketlens.datasets.adapters.uci_online_retail_ii import UCIOnlineRetailIIAdapter
@@ -345,6 +350,85 @@ def cmd_pricing_optimize(args: argparse.Namespace) -> int:
         return 4
 
 
+def cmd_market_review(args: argparse.Namespace) -> int:
+    """Analyze single customer review text using rule-based or mock extractor."""
+    print("=" * 80)
+    print("MARKETLENS AI — CUSTOMER REVIEW INSIGHT AGENT")
+    print("=" * 80)
+    try:
+        agent = ReviewInsightAgent(
+            extraction_method=ExtractionMethod(args.method.lower())
+        )
+        record = ReviewInputRecord(
+            review_id=args.review_id,
+            product_id=args.product_id,
+            review_text=args.text,
+            rating=args.rating,
+            is_synthetic=args.is_synthetic,
+        )
+        insight = agent.process_review(record)
+        print(f"Review ID:           {insight.review_id}")
+        print(f"Product ID:          {insight.product_id}")
+        print(f"Sentiment:           {insight.sentiment_label.value.upper()} (score: {insight.sentiment_score:.2f})")
+        print(f"Aspects:             {', '.join(insight.aspects) if insight.aspects else 'None'}")
+        print(f"Complaint Types:     {', '.join(insight.complaint_categories) if insight.complaint_categories else 'None'}")
+        print(f"Praise Types:        {', '.join(insight.praise_categories) if insight.praise_categories else 'None'}")
+        print(f"Evidence Excerpt:    {insight.evidence_excerpt or 'None'}")
+        print(f"Summary:             {insight.summary}")
+        print(f"Method:              {insight.extraction_method.value}")
+        print(f"Validation:          {insight.validation_status.value}")
+        if insight.warnings:
+            print(f"Warnings:            {'; '.join(insight.warnings)}")
+        print("=" * 80)
+        return 0
+    except Exception as e:
+        print(f"Review analysis error: {e}", file=sys.stderr)
+        return 5
+
+
+def cmd_market_competitor(args: argparse.Namespace) -> int:
+    """Detect deterministic price change metrics between two competitor observations."""
+    print("=" * 80)
+    print("MARKETLENS AI — COMPETITOR MONITORING AGENT")
+    print("=" * 80)
+    try:
+        now = datetime.now(timezone.utc)
+        prev = CompetitorObservation(
+            observation_id="cli_prev",
+            product_id=args.product_id,
+            competitor_id=args.competitor_id,
+            observed_price=args.prev_price,
+            currency=args.currency,
+            observed_at=now,
+            is_synthetic=args.is_synthetic,
+        )
+        curr = CompetitorObservation(
+            observation_id="cli_curr",
+            product_id=args.product_id,
+            competitor_id=args.competitor_id,
+            observed_price=args.curr_price,
+            currency=args.currency,
+            observed_at=now,
+            is_synthetic=args.is_synthetic,
+        )
+        agent = CompetitorMonitorAgent(price_change_threshold_pct=args.threshold)
+        evt = agent.detect_change(prev, curr)
+
+        print(f"Competitor ID:       {evt.competitor_id}")
+        print(f"Product ID:          {evt.product_id}")
+        print(f"Price Movement:      {evt.previous_price:.2f} -> {evt.current_price:.2f} {evt.currency}")
+        print(f"Absolute Change:     {evt.absolute_change:+.2f} {evt.currency}")
+        print(f"Percentage Change:   {evt.percentage_change:+.1f}% ({evt.direction.value})")
+        print(f"Threshold Exceeded:  {evt.threshold_exceeded} (limit: {args.threshold}%)")
+        print(f"Stale Observation:   {evt.is_stale}")
+        print(f"Synthetic Data:      {evt.is_synthetic}")
+        print("=" * 80)
+        return 0
+    except Exception as e:
+        print(f"Competitor monitor error: {e}", file=sys.stderr)
+        return 6
+
+
 def main(args: list[str] | None = None) -> int:
     """CLI entry point for MarketLens AI."""
     configure_logging()
@@ -415,6 +499,31 @@ def main(args: list[str] | None = None) -> int:
     opt_parser.add_argument("--support-max", type=float, default=None, help="Historical maximum observed training price")
     opt_parser.add_argument("--is-synthetic", action="store_true", help="Explicitly mark inputs or costs as synthetic scenario")
     opt_parser.set_defaults(func=cmd_pricing_optimize)
+
+    # market intelligence command group
+    market_parser = subparsers.add_parser("market", help="Market intelligence workflows (reviews, competitors, signals)")
+    market_sub = market_parser.add_subparsers(dest="subcommand", required=True)
+
+    # market review
+    rev_parser = market_sub.add_parser("review", help="Analyze customer review perception")
+    rev_parser.add_argument("--review-id", default="cli_rev_1", help="Review identifier")
+    rev_parser.add_argument("--product-id", required=True, help="Product identifier")
+    rev_parser.add_argument("--text", required=True, help="Customer review text to evaluate")
+    rev_parser.add_argument("--rating", type=float, default=None, help="Rating score (1.0 to 5.0)")
+    rev_parser.add_argument("--method", default="rule_based", choices=["rule_based", "mock"], help="Extraction method")
+    rev_parser.add_argument("--is-synthetic", action="store_true", help="Mark as synthetic test record")
+    rev_parser.set_defaults(func=cmd_market_review)
+
+    # market competitor
+    comp_parser = market_sub.add_parser("competitor", help="Detect competitor price movement")
+    comp_parser.add_argument("--product-id", required=True, help="Product identifier")
+    comp_parser.add_argument("--competitor-id", required=True, help="Competitor identifier")
+    comp_parser.add_argument("--prev-price", type=float, required=True, help="Prior observed price")
+    comp_parser.add_argument("--curr-price", type=float, required=True, help="Current observed price")
+    comp_parser.add_argument("--currency", default="GBP", help="Currency code")
+    comp_parser.add_argument("--threshold", type=float, default=5.0, help="Percentage alert threshold")
+    comp_parser.add_argument("--is-synthetic", action="store_true", help="Mark as synthetic test record")
+    comp_parser.set_defaults(func=cmd_market_competitor)
 
     parsed = parser.parse_args(args)
     return parsed.func(parsed)

@@ -1,17 +1,19 @@
 # MarketLens AI — Market Intelligence and Review Analysis Agents Configuration
 
 general:
-  # LLM agents are strictly disabled in Phase 0; deterministic/mock providers used
-  agents_enabled: false
-  default_provider: "mock" # Options: mock, gemini, openai
+  # In Phase 4, agent workflows run deterministically offline (mock / rule-based)
+  agents_enabled: true
+  default_provider: "mock" # Options: mock, rule_based, gemini, openai
   request_timeout_seconds: 30
   max_retries: 2
-  log_prompts_and_responses: false # Set to true only in debug environments without sensitive PII
+  log_prompts_and_responses: false # Kept false to strictly protect customer PII
 
 review_insight_agent:
-  enabled: false
+  enabled: true
+  default_extraction_method: "rule_based" # Options: rule_based, mock, llm
   model_name: "gemini-1.5-flash"
-  batch_size: 20
+  batch_size: 32
+  max_text_chars: 4000
   validate_schema: true
   min_evidence_length_chars: 10
   sentiment_scale:
@@ -25,12 +27,16 @@ review_insight_agent:
     - "packaging"
 
 competitor_monitoring_agent:
-  enabled: false
+  enabled: true
   price_change_alert_threshold_pct: 5.0 # Alert when competitor changes price by >= 5%
   max_observation_age_days: 7
   allow_currency_conversion: false
 
 market_signal_aggregator:
-  enabled: false
+  enabled: true
+  review_lookback_days: 30
+  competitor_lookback_days: 7
+  minimum_reviews_for_aggregate: 5
   time_alignment_window_days: 7
   require_provenance: true
+
