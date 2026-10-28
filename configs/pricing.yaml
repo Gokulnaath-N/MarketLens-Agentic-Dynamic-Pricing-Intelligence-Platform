@@ -8,22 +8,34 @@ optimization:
   # Candidate price grid generation
   grid:
     num_candidates: 21
-    # Multipliers relative to current or base price [example placeholders]:
-    min_multiplier: 0.70 # -30% lower bound
-    max_multiplier: 1.30 # +30% upper bound
+    max_candidates: 101 # Hard upper limit to prevent unbounded memory/compute
+    default_step: null # If null, step is derived from [price_min, price_max] / (num_candidates - 1)
+    min_multiplier: 0.70 # 30% lower bound relative to current price when bounds omitted
+    max_multiplier: 1.30 # 30% upper bound relative to current price when bounds omitted
+    currency_precision: 2 # Decimal places for rounding prices
+
+  # Deterministic tie-breaking policy
+  tie_breaking:
+    numerical_tolerance: 1e-4 # Floating point equivalence threshold
+    strategy: "closest_to_current" # Options: closest_to_current, lowest_price, highest_price
 
 constraints:
   # Hard business constraints
-  min_margin_percentage: 0.15 # 15% minimum margin (when unit cost is available)
+  min_margin_percentage: 0.15 # 15% minimum margin floor (when unit cost is available)
   max_price_movement_percentage: 0.20 # Maximum 20% price adjustment in a single period
   enforce_non_negative_demand: true
 
+  # Optional competitor-relative policy (only applied when valid competitor price is present)
+  max_competitor_price_premium_pct: null # E.g. 0.10 means max 10% above competitor
+
 extrapolation:
-  # Flag predictions where candidate price falls outside the observed training range
+  # Observed model training support guardrails
+  policy: "warn" # Options: 'warn' (emit warning flag) or 'reject' (mark candidate infeasible)
   warn_on_unsupported_price: true
   confidence_discount_factor: 0.85
 
 governance:
-  # Recommendations require explicit human review and approval before action
-  require_human_approval: true
+  # Decision support governance
+  require_human_approval: true # Must always be true in decision-support mode
   auto_reprice_enabled: false # Strictly disabled in MVP
+

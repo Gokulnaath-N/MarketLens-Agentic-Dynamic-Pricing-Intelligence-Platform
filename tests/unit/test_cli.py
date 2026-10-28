@@ -46,3 +46,50 @@ class TestCLICommands:
         assert exit_code == 2
         captured = capsys.readouterr()
         assert "Cannot acquire dataset" in captured.err
+
+    def test_cli_pricing_optimize_revenue(self, capsys):
+        exit_code = main(
+            [
+                "pricing",
+                "optimize",
+                "--product-id",
+                "uci_85123A",
+                "--current-price",
+                "2.95",
+                "--price-min",
+                "2.00",
+                "--price-max",
+                "4.00",
+                "--step",
+                "0.50",
+                "--objective",
+                "revenue",
+            ]
+        )
+        assert exit_code == 0
+        captured = capsys.readouterr()
+        assert "CONSTRAINED PRICING OPTIMIZATION ENGINE" in captured.out
+        assert "Recommended Candidate Price" in captured.out
+
+    def test_cli_pricing_optimize_profit_missing_cost_fails(self, capsys):
+        exit_code = main(
+            [
+                "pricing",
+                "optimize",
+                "--product-id",
+                "uci_85123A",
+                "--current-price",
+                "2.95",
+                "--price-min",
+                "2.00",
+                "--price-max",
+                "4.00",
+                "--objective",
+                "profit",
+                # Omit --unit-cost
+            ]
+        )
+        assert exit_code == 4
+        captured = capsys.readouterr()
+        assert "Pricing optimization error" in captured.err
+

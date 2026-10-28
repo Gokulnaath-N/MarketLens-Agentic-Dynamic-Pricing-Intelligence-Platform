@@ -26,6 +26,9 @@ from marketlens.features.temporal import build_temporal_features
 from marketlens.forecasting.artifacts import save_evaluation_artifacts, save_processed_datasets
 from marketlens.forecasting.evaluate import train_and_evaluate_models
 from marketlens.logging_config import configure_logging, get_logger
+from marketlens.pricing.optimizer import PricingOptimizer
+from marketlens.pricing.scenario import ConstantElasticityDemandAdapter
+from marketlens.pricing.schemas import OptimizationObjective, OptimizationRequest
 
 logger = get_logger("marketlens.cli")
 
@@ -284,6 +287,64 @@ def cmd_forecast_pipeline(args: argparse.Namespace) -> int:
         return 3
 
 
+def cmd_pricing_optimize(args: argparse.Namespace) -> int:
+    """Execute constrained pricing optimization for a candidate SKU."""
+    print("=" * 80)
+    print("MARKETLENS AI — CONSTRAINED PRICING OPTIMIZATION ENGINE")
+    print("=" * 80)
+
+    try:
+        objective = OptimizationObjective(args.objective.lower())
+        request = OptimizationRequest(
+            product_id=args.product_id,
+            current_price=args.current_price,
+            price_min=args.price_min,
+            price_max=args.price_max,
+            price_step=args.step,
+            num_candidates=args.num_candidates,
+            objective=objective,
+            unit_cost=args.unit_cost,
+            min_gross_margin=args.min_margin,
+            max_price_change_pct=args.max_change_pct,
+            currency=args.currency,
+            is_synthetic=args.is_synthetic,
+        )
+
+        # Build demand predictor adapter
+        # Uses explicit elasticity adapter for scenario pricing
+        adapter = ConstantElasticityDemandAdapter(
+            base_demand=args.base_demand,
+            reference_price=args.current_price,
+            elasticity=args.elasticity,
+            is_synthetic=args.is_synthetic,
+        )
+
+        optimizer = PricingOptimizer(
+            tie_breaking_strategy="closest_to_current",
+            extrapolation_policy="warn",
+        )
+
+        result = optimizer.optimize(
+            request=request,
+            predictor=adapter,
+            support_min=args.support_min,
+            support_max=args.support_max,
+        )
+
+        print(result.explanation)
+        print("-" * 80)
+        print(f"Status:                     {result.status.value}")
+        print(f"Human Approval Required:    {result.human_approval_required}")
+        print(f"Is Synthetic Scenario:      {result.is_synthetic}")
+        print("=" * 80)
+        return 0
+
+    except Exception as e:
+        print(f"Pricing optimization error: {e}", file=sys.stderr)
+        logger.exception("Pricing optimization failed.")
+        return 4
+
+
 def main(args: list[str] | None = None) -> int:
     """CLI entry point for MarketLens AI."""
     configure_logging()
@@ -330,6 +391,30 @@ def main(args: list[str] | None = None) -> int:
     pipeline_parser.add_argument("--min-active", type=int, default=10, help="Minimum active periods to keep a product (default: 10)")
     pipeline_parser.add_argument("--horizon", type=int, default=1, help="Forecast horizon steps ahead (default: 1)")
     pipeline_parser.set_defaults(func=cmd_forecast_pipeline)
+
+    # pricing command group
+    pricing_parser = subparsers.add_parser("pricing", help="Price optimization and scenario evaluation")
+    pricing_sub = pricing_parser.add_subparsers(dest="subcommand", required=True)
+
+    # pricing optimize
+    opt_parser = pricing_sub.add_parser("optimize", help="Evaluate candidate prices against constraints and objectives")
+    opt_parser.add_argument("--product-id", required=True, help="Product SKU or canonical identifier")
+    opt_parser.add_argument("--current-price", type=float, required=True, help="Current selling price")
+    opt_parser.add_argument("--price-min", type=float, required=True, help="Minimum allowable price bound")
+    opt_parser.add_argument("--price-max", type=float, required=True, help="Maximum allowable price bound")
+    opt_parser.add_argument("--step", type=float, default=None, help="Discrete price grid increment")
+    opt_parser.add_argument("--num-candidates", type=int, default=21, help="Number of candidate points if step is omitted")
+    opt_parser.add_argument("--objective", default="revenue", choices=["revenue", "profit"], help="Target objective")
+    opt_parser.add_argument("--unit-cost", type=float, default=None, help="Unit cost (COGS). Required if objective is profit")
+    opt_parser.add_argument("--min-margin", type=float, default=None, help="Minimum gross margin proportion (e.g. 0.15)")
+    opt_parser.add_argument("--max-change-pct", type=float, default=None, help="Maximum price movement proportion (e.g. 0.20)")
+    opt_parser.add_argument("--currency", default="GBP", help="Currency code (default: GBP)")
+    opt_parser.add_argument("--elasticity", type=float, default=-1.5, help="Demand price elasticity parameter (default: -1.5)")
+    opt_parser.add_argument("--base-demand", type=float, default=100.0, help="Baseline expected demand at current price")
+    opt_parser.add_argument("--support-min", type=float, default=None, help="Historical minimum observed training price")
+    opt_parser.add_argument("--support-max", type=float, default=None, help="Historical maximum observed training price")
+    opt_parser.add_argument("--is-synthetic", action="store_true", help="Explicitly mark inputs or costs as synthetic scenario")
+    opt_parser.set_defaults(func=cmd_pricing_optimize)
 
     parsed = parser.parse_args(args)
     return parsed.func(parsed)
