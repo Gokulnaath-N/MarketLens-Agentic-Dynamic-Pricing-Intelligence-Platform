@@ -1,7 +1,7 @@
 # MarketLens AI — Agentic Dynamic Pricing Intelligence Platform
 
-> **Status:** Under Active Development (Phase 5 Complete: Hybrid ML Integration & Feature Ablation)  
-> **Source of Truth:** Refer to [MARKETLENS_AI_KNOWLEDGE_BASE.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/MARKETLENS_AI_KNOWLEDGE_BASE.md) for complete technical specifications, mathematical definitions, and architectural policies.
+> **Status:** Phase 6 Complete: Advanced React + Vite Dashboard, FastAPI Integration & End-to-End Application  
+> **Source of Truth:** Refer to [MARKETLENS_AI_KNOWLEDGE_BASE.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/MARKETLENS_AI_KNOWLEDGE_BASE.md) and [docs/phase_6_api_integration.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/docs/phase_6_api_integration.md).
 
 ---
 
@@ -30,40 +30,41 @@ The platform follows a modular, layered architecture:
 
 ```mermaid
 flowchart TD
-    A[Public Datasets: UCI Online Retail II / Olist] --> B[Source Registry & Bounded Downloader]
+    A[Public Datasets: UCI Online Retail II] --> B[Source Registry & Bounded Downloader]
     B --> C[Immutable Raw Data & Provenance Manifests]
     C --> D[Vectorized Contracts & Canonical Cleaning]
     D --> E[Calendar Regularization & Weekly Aggregation]
     E --> F[Leakage-Safe Temporal Features: Lags & Rolling Stats]
     F --> G[Chronological Holdout Split: 70/15/15]
-    G --> H[Forecasting Suite: Naive -> MA-4w -> Ridge -> Random Forest]
+    G --> H[Forecasting Suite: Naive -> Historical Mean -> Ridge -> XGBoost]
     H --> I[Parquet Predictions & Zero-Safe Metrics Evaluation]
     I --> J[Constrained Pricing Engine: Revenue, Profit & Margin Floors]
     J --> K[Market Intelligence Agents: Reviews & Competitors]
     K --> L[Feature Ablation & Hybrid ML Evaluation: Phase 5]
-    L --> M[FastAPI Backend & Streamlit Dashboard: Phase 6]
+    L --> M[FastAPI REST API: src/marketlens/api/]
+    M --> N[React 19 + Vite Dashboard with Draggable Widget Grid: frontend/]
 ```
 
 ### Key Architectural Layers:
 1. **Source Discovery & Data Engineering:** Provenance tracking, automated bounded downloads, integrity validation, and canonical schema contracts.
 2. **Canonical Data Modeling & Feature Store:** Deterministic cleaning of cancellations and non-product codes, continuous Monday-aligned weekly aggregation (`W-MON`), and zero-demand regularization.
 3. **Leakage-Safe Feature Engineering:** Lag features ($t-h$) and rolling metrics shifted strictly by the forecast horizon ($h=1$), mathematically proven through perturbation tests.
-4. **Demand Forecasting & Baselines:** Strict chronological holdout splits (70% train, 15% validation, 15% test) comparing Naive, Moving Average, Ridge, and Random Forest models across MAE, RMSE, WAPE, MASE, and $R^2$.
+4. **Demand Forecasting & Baselines:** Strict chronological holdout splits (70% train, 15% validation, 15% test) comparing Naive, Moving Average, Ridge, and XGBoost models across MAE, RMSE, WAPE, and $R^2$.
 5. **Constrained Pricing Engine:** Decimal-safe discrete price grid generation, revenue and profit optimization, gross-margin floors, price movement limits, and model-support extrapolation guards with evidence-based explanations.
 6. **Market Intelligence Agents (Phase 4):** Structured review insight extraction (LLM with offline mock/rule-based fallback), deterministic competitor price tracking and alerts, and leakage-safe signal aggregation.
 7. **Hybrid ML & Feature Ablation (Phase 5):** Four-way controlled feature ablation (E0 Baseline, E1 Reviews, E2 Competitors, E3 Both), anti-leakage temporal alignment ($t_{\text{obs}} \le t_{\text{origin}}$), signed metric deltas, and pricing impact evaluation.
-8. **Product & Serving (Upcoming Phase 6):** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
+8. **Product & Serving (Phase 6):** Complete FastAPI REST API endpoints connected natively to a high-end, Webflow-inspired React 19 + Vite + TypeScript web dashboard featuring customizable draggable analytics widgets.
 
 ---
 
 ## 4. Technology Stack
 
-- **Core & Runtime:** Python 3.10+ (tested on Python 3.13)
+- **Core & Runtime:** Python 3.10+ (tested on Python 3.13) & Node.js 24+
 - **Data Engineering:** Pandas, NumPy, PyArrow, PyYAML, Python-Dotenv
 - **Machine Learning & Modeling:** Scikit-learn, Scipy, XGBoost
-- **API Backend:** FastAPI, Pydantic v2, Uvicorn
-- **Frontend Dashboard:** Streamlit
-- **Testing & Quality:** Pytest, Pytest-cov
+- **API Backend:** FastAPI, Pydantic v2, Uvicorn, Starlette, HTTPX
+- **Frontend Dashboard:** React 19, TypeScript, Vite 8, Tailwind CSS, Motion (`motion/react`), Lucide React, Recharts, TanStack Query
+- **Testing & Quality:** Pytest (163 tests passing), Vitest (6 tests passing), Pytest-cov, TypeScript Typecheck (`tsc -b`)
 
 ---
 
@@ -222,12 +223,38 @@ Agentic_Dynammic_Intelligence_Platform/
 
 5. **Execute tests to verify installation:**
    ```powershell
+   # Run all 163 backend tests:
    python -m pytest
+
+   # Run frontend unit tests:
+   cd frontend
+   npm run test
    ```
 
 ---
 
-## 7. Command-Line Interface (CLI)
+## 7. Running the Application (Local Two-Terminal Workflow)
+
+To launch MarketLens AI with the full React + Vite dashboard connected natively to the FastAPI backend:
+
+### Terminal A: FastAPI REST API
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn marketlens.api.main:app --host 127.0.0.1 --port 8000 --reload
+```
+*Interactive Swagger documentation: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)*
+
+### Terminal B: React + Vite Web Dashboard
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+*Web dashboard interface: [http://127.0.0.1:5173](http://127.0.0.1:5173)*
+
+---
+
+## 8. Command-Line Interface (CLI)
 
 MarketLens AI provides commands for dataset management, demand forecasting, feature ablation, pricing optimization, and agentic market intelligence:
 
@@ -275,7 +302,7 @@ python -m marketlens.cli market competitor --product-id PROD-123 --competitor-id
 
 ---
 
-## 8. Development Roadmap
+## 9. Development Roadmap
 
 | Phase | Description | Status |
 | :---: | :--- | :---: |
@@ -285,6 +312,6 @@ python -m marketlens.cli market competitor --product-id PROD-123 --competitor-id
 | **3** | **Constrained Pricing Optimization Engine** | **Completed** |
 | **4** | **Agentic Market Intelligence & Signal Aggregation** | **Completed** |
 | **5** | **Hybrid Feature Evaluation & 4-Way Model Ablation** | **Completed** |
-| **6** | FastAPI Backend & Interactive Streamlit Dashboard | Up Next |
-| **7** | Production Hardening, Documentation & MLOps | Planned |
+| **6** | **Advanced React + Vite Dashboard & FastAPI Backend** | **Completed** |
+| **7** | Production Hardening, Documentation & MLOps | Up Next |
 
