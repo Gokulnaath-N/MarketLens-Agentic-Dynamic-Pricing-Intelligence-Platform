@@ -1,6 +1,6 @@
 # MarketLens AI — Agentic Dynamic Pricing Intelligence Platform
 
-> **Status:** Under Active Development (Phase 0 Complete)  
+> **Status:** Under Active Development (Phase 2 Complete: Canonical Data Modeling, Leakage-Safe Feature Engineering & Baseline Demand Forecasting)  
 > **Source of Truth:** Refer to [MARKETLENS_AI_KNOWLEDGE_BASE.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/MARKETLENS_AI_KNOWLEDGE_BASE.md) for complete technical specifications, mathematical definitions, and architectural policies.
 
 ---
@@ -30,36 +30,33 @@ The platform follows a modular, layered architecture:
 
 ```mermaid
 flowchart TD
-    A[Public Datasets: Olist / UCI / M5] --> B[Source Registry & Downloader]
-    B --> C[Immutable Raw Data & Manifests]
-    C --> D[Validation & Canonical Cleaning]
-    D --> E[Feature Engineering: Lags & Calendar]
-    C --> F[Review Insight Agent: LLM / Mock]
-    C --> G[Competitor Monitoring Agent]
-    F --> H[Validated Market Signals]
-    G --> H
-    H --> I[Time-Aligned Feature Store]
-    E --> I
-    I --> J[Demand Forecasting: Naive -> RF -> XGBoost]
-    J --> K[Scenario Demand Prediction]
-    K --> L[Constrained Pricing Optimizer]
-    L --> M[FastAPI Backend & Streamlit Dashboard]
+    A[Public Datasets: UCI Online Retail II / Olist] --> B[Source Registry & Bounded Downloader]
+    B --> C[Immutable Raw Data & Provenance Manifests]
+    C --> D[Vectorized Contracts & Canonical Cleaning]
+    D --> E[Calendar Regularization & Weekly Aggregation]
+    E --> F[Leakage-Safe Temporal Features: Lags & Rolling Stats]
+    F --> G[Chronological Holdout Split: 70/15/15]
+    G --> H[Forecasting Suite: Naive -> MA-4w -> Ridge -> Random Forest]
+    H --> I[Parquet Predictions & Zero-Safe Metrics Evaluation]
+    I --> J[Pricing Engine & Agent Workflows: Phase 3-5]
+    J --> K[FastAPI Backend & Streamlit Dashboard: Phase 6]
 ```
 
 ### Key Architectural Layers:
-1. **Source Discovery & Data Engineering:** Provenance tracking, automated bounded downloads, integrity validation, and canonical schema mapping.
-2. **Market Intelligence:** Schema-validated review sentiment/aspect extraction and deterministic competitor price change detection.
-3. **Demand Forecasting:** Chronological validation splits, time-aware feature engineering, baseline comparisons, and 4-way feature ablation.
-4. **Pricing Optimization:** Non-linear expected revenue and estimated profit evaluation with hard business constraints (min margin, max step changes, supported training bounds).
-5. **Product & Serving:** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
+1. **Source Discovery & Data Engineering:** Provenance tracking, automated bounded downloads, integrity validation, and canonical schema contracts.
+2. **Canonical Data Modeling & Feature Store:** Deterministic cleaning of cancellations and non-product codes, continuous Monday-aligned weekly aggregation (`W-MON`), and zero-demand regularization.
+3. **Leakage-Safe Feature Engineering:** Lag features ($t-h$) and rolling metrics shifted strictly by the forecast horizon ($h=1$), mathematically proven through perturbation tests.
+4. **Demand Forecasting & Baselines:** Strict chronological holdout splits (70% train, 15% validation, 15% test) comparing Naive, Moving Average, Ridge, and Random Forest models across MAE, RMSE, WAPE, MASE, and $R^2$.
+5. **Pricing Optimization (Upcoming Phase 3):** Non-linear expected revenue and estimated profit evaluation with hard business constraints (min margin, max step changes, supported training bounds).
+6. **Product & Serving (Upcoming Phase 6):** FastAPI REST endpoints and an analytical Streamlit dashboard with full provenance indicators.
 
 ---
 
 ## 4. Technology Stack
 
 - **Core & Runtime:** Python 3.10+ (tested on Python 3.13)
-- **Data Engineering:** Pandas, NumPy, PyYAML, Python-Dotenv
-- **Machine Learning & Modeling:** Scikit-learn, XGBoost
+- **Data Engineering:** Pandas, NumPy, PyArrow, PyYAML, Python-Dotenv
+- **Machine Learning & Modeling:** Scikit-learn, Scipy, XGBoost
 - **API Backend:** FastAPI, Pydantic v2, Uvicorn
 - **Frontend Dashboard:** Streamlit
 - **Testing & Quality:** Pytest, Pytest-cov
@@ -80,56 +77,73 @@ Agentic_Dynammic_Intelligence_Platform/
 ├── configs/                         # Modular YAML configurations
 │   ├── app.yaml                     # Application & storage settings
 │   ├── datasets.yaml                # Source registry & acquisition parameters
-│   ├── forecasting.yaml             # Modeling, splits, and evaluation metrics
+│   ├── forecasting.yaml             # Modeling, splits, weekly grain, and metrics
 │   ├── pricing.yaml                 # Optimization objectives & margin constraints
 │   └── agents.yaml                  # Agent settings & LLM provider configurations
 │
 ├── data/                            # Segregated data storage (ignored by git)
 │   ├── raw/                         # Immutable downloaded source files (git-ignored)
-│   ├── interim/                     # Intermediate transformations (git-ignored)
-│   ├── processed/                   # Canonical schema datasets (git-ignored)
-│   ├── external/                    # External references
+│   ├── processed/                   # Canonical Parquet datasets (git-ignored)
+│   │   ├── sales_observations.parquet
+│   │   ├── demand_timeseries.parquet
+│   │   └── product_catalog.parquet
 │   └── manifests/                   # Dataset manifests, checksums, and profile JSONs
 │       ├── datasets_manifest.json
 │       ├── dataset_candidate_inventory.json
+│       ├── derived_data_manifest.json
 │       └── profiles/uci_online_retail_ii_profile.json
 │
 ├── docs/                            # In-depth technical documentation
 │   ├── development_setup.md         # Step-by-step setup guide
+│   ├── phase2_readiness_report.md   # Raw dataset verification audit
+│   ├── canonical_data_dictionary.md # Phase 2 schemas and validation contracts
+│   ├── forecasting_methodology.md   # Mathematical modeling & anti-leakage proofs
+│   ├── dataset_limitations.md       # Empirical truthfulness & absent feature audit
+│   ├── phase2_evaluation_report.md  # Full benchmark results & acceptance criteria
 │   └── datasets/                    # Phase 1 dataset documentation
 │       ├── ACQUISITION_REPORT.md    # Full acquisition audit and findings
 │       ├── ATTRIBUTION.md           # Formal citations and license register
-│       └── DATA_DICTIONARY.md       # Exact column definitions and distributions
+│       └── DATA_DICTIONARY.md       # Raw column definitions and distributions
 │
 ├── src/marketlens/                  # Core application package
 │   ├── __init__.py                  # Package definition
 │   ├── config.py                    # Safe YAML config loader & env resolver
 │   ├── logging_config.py            # Idempotent logging setup
-│   ├── cli.py                       # CLI entry point (datasets discover/status/download/profile)
-│   └── datasets/                    # Phase 1: Discovery, acquisition & profiling
-│       ├── models.py                # Typed Pydantic models
-│       ├── registry.py              # Candidate discovery & scoring
-│       ├── licenses.py              # License hard-gate validation
-│       ├── downloader.py            # Bounded streaming acquisition (.part)
-│       ├── integrity.py             # SHA-256 & archive security
-│       ├── manifests.py             # Provenance serialization
-│       ├── profiler.py              # Read-only tabular statistics
-│       └── adapters/                # Source-specific adapters (UCI Online Retail II)
+│   ├── cli.py                       # CLI entry point (datasets & forecasting)
+│   ├── datasets/                    # Phase 1: Discovery, acquisition & profiling
+│   │   ├── models.py                # Typed Pydantic models
+│   │   ├── registry.py              # Candidate discovery & scoring
+│   │   ├── licenses.py              # License hard-gate validation
+│   │   ├── downloader.py            # Bounded streaming acquisition (.part)
+│   │   ├── integrity.py             # SHA-256 & archive security
+│   │   ├── manifests.py             # Provenance serialization
+│   │   ├── profiler.py              # Read-only tabular statistics
+│   │   └── adapters/                # Source-specific adapters (UCI Online Retail II)
+│   ├── data/                        # Phase 2: Contracts, cleaning & aggregation
+│   │   ├── contracts.py             # Vectorized schema validation
+│   │   ├── loaders.py               # Raw source data loaders
+│   │   ├── cleaning.py              # Deterministic cleaning & audit metrics
+│   │   ├── canonicalize.py          # Entity normalization & product catalog
+│   │   ├── aggregation.py           # Weekly grid alignment & zero imputation
+│   │   └── split.py                 # Strict chronological holdout partitioning
+│   ├── features/                    # Phase 2: Temporal feature engineering
+│   │   └── temporal.py              # Horizon-shifted lags & perturbation checks
+│   └── forecasting/                 # Phase 2: Baseline modeling & evaluation
+│       ├── metrics.py               # Zero-safe MAE, RMSE, WAPE, MASE, R2
+│       ├── baselines.py             # Naive, Moving Average, Ridge, Random Forest
+│       ├── evaluate.py              # Split-aware multi-model evaluation
+│       └── artifacts.py             # Parquet predictions & lineage manifest
 │
-├── tests/                           # Test suite (52 offline tests)
+├── tests/                           # Complete test suite (81 passing tests)
 │   ├── conftest.py                  # Pytest fixtures and cleanup
-│   └── unit/                        # Deterministic unit tests
-│       ├── test_config.py           # Configuration tests
-│       ├── test_logging_config.py   # Logging tests
-│       ├── test_cli.py              # CLI workflow tests
-│       ├── test_dataset_registry.py # Registry & scoring tests
-│       ├── test_dataset_manifest.py # Provenance serialization tests
-│       ├── test_downloader.py       # Bounded streaming tests
-│       ├── test_integrity.py        # Hashes & archive security tests
-│       └── test_profiler.py         # Read-only profiling tests
+│   ├── unit/                        # Deterministic unit tests (80 tests)
+│   └── integration/                 # End-to-end integration tests (1 test)
 │
 ├── dashboard/                       # Streamlit application (Phase 6)
-└── artifacts/                       # Trained models, plots, reports (git-ignored)
+└── artifacts/                       # Trained models, predictions, reports (git-ignored)
+    ├── model_comparison.json
+    ├── model_comparison.csv
+    └── test_predictions.parquet
 ```
 
 ---
@@ -156,10 +170,10 @@ Agentic_Dynammic_Intelligence_Platform/
    .\.venv\Scripts\Activate.ps1
    ```
 
-3. **Install the package in editable mode with development and data dependencies:**
+3. **Install the package in editable mode with all dependencies:**
    ```powershell
    python -m pip install --upgrade pip
-   pip install -e ".[dev,data]"
+   pip install -e ".[dev,data,forecasting]"
    ```
 
 4. **Initialize environment variables:**
@@ -174,52 +188,52 @@ Agentic_Dynammic_Intelligence_Platform/
 
 ---
 
-## 7. Dataset Management CLI
+## 7. Command-Line Interface (CLI)
 
-MarketLens AI includes a bounded command-line tool for discovery, integrity verification, and data profiling:
+MarketLens AI provides commands for dataset management and end-to-end demand forecasting:
 
+### Dataset Management
 ```powershell
-# 1. Discover registered candidates and evaluate licensing hard-gates:
+# Discover registered candidates and evaluate licensing hard-gates:
 python -m marketlens.cli datasets discover
 
-# 2. Check local dataset acquisition status:
+# Check local dataset acquisition status:
 python -m marketlens.cli datasets status
 
-# 3. Perform a dry-run acquisition without downloading:
-python -m marketlens.cli datasets download --source uci_online_retail_ii --dry-run
-
-# 4. Acquire and verify approved dataset (bounded streaming with SHA-256):
+# Acquire and verify approved dataset (bounded streaming with SHA-256):
 python -m marketlens.cli datasets download --source uci_online_retail_ii
 
-# 5. Profile acquired tabular dataset (read-only):
+# Profile acquired tabular dataset (read-only):
 python -m marketlens.cli datasets profile --source uci_online_retail_ii
 ```
 
-For complete dataset citations, licenses, and schema distributions, refer to:
-- [docs/datasets/ACQUISITION_REPORT.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/docs/datasets/ACQUISITION_REPORT.md)
-- [docs/datasets/ATTRIBUTION.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/docs/datasets/ATTRIBUTION.md)
-- [docs/datasets/DATA_DICTIONARY.md](file:///d:/Professional%20Projects/Agentic_Dynammic_Intelligence_Platform/docs/datasets/DATA_DICTIONARY.md)
+### Demand Forecasting Pipeline
+```powershell
+# Run the complete Phase 2 end-to-end forecasting pipeline:
+python -m marketlens.cli forecast pipeline --sample-rows 50000 --top-products 50
+```
+
+The pipeline:
+1. Loads and audits raw transactions.
+2. Cleans cancellations, duplicates, non-product SKUs, and zero prices.
+3. Generates canonical sales observations and weekly aggregated demand panels.
+4. Partitions data chronologically (70% train, 15% val, 15% test).
+5. Generates leakage-safe temporal features ($t-h$).
+6. Trains and evaluates Naive, Moving Average, Ridge, and Random Forest models.
+7. Exports Parquet predictions, comparison JSON/CSV metrics, and derived lineage manifests.
 
 ---
 
-## 8. Security & Operating Principles
-
-1. **Zero Hardcoded Secrets:** API keys and credentials must reside exclusively in local `.env` files; never commit credentials or raw customer review data.
-2. **Deterministic Foundations:** arithmetic, constraint validation, and optimization are strictly deterministic; LLMs are bounded to structured language extraction and explanation.
-3. **No Synthetic Misrepresentation:** Any mock competitor data or simulated cost feeds are explicitly tagged with `is_synthetic = True` and excluded from model accuracy metrics.
-4. **Chronological Integrity:** All feature calculations strictly precede the forecast origin $t$ to eliminate lookahead data leakage.
-
----
-
-## 9. Development Roadmap
+## 8. Development Roadmap
 
 | Phase | Description | Status |
 | :---: | :--- | :---: |
 | **0** | **Repository Foundation & Environment Setup** | **Completed** |
 | **1** | **Dataset Discovery, Rights Review, Acquisition & Profiling** | **Completed** |
-| **2** | Canonical Data Processing & Baseline Demand Forecasting | Up Next |
-| **3** | Constrained Pricing Optimization Engine | Planned |
+| **2** | **Canonical Data Processing & Baseline Demand Forecasting** | **Completed** |
+| **3** | Constrained Pricing Optimization Engine | Up Next |
 | **4** | Market Intelligence Workflows (Reviews & Competitor Agents) | Planned |
 | **5** | Hybrid Feature Evaluation & 4-Way Model Ablation | Planned |
 | **6** | FastAPI Backend & Interactive Streamlit Dashboard | Planned |
 | **7** | Production Hardening, Documentation & MLOps | Planned |
+

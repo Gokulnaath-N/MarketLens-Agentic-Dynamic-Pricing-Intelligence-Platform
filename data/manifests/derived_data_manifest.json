@@ -1,0 +1,59 @@
+{
+  "manifest_type": "derived_data_lineage",
+  "created_at_utc": "2026-10-28T17:43:49.074811+00:00",
+  "input_dataset": "uci_online_retail_ii",
+  "cleaning_audit": {
+    "initial_rows": 100000,
+    "final_clean_sales_rows": 95951,
+    "total_excluded_rows": 4049,
+    "exclusion_breakdown": {
+      "missing_identifier_or_date": 0,
+      "cancellations_and_returns_rows": 2263,
+      "cancellation_net_units": -53243,
+      "administrative_non_product_skus": 312,
+      "zero_or_negative_price_rows": 406,
+      "exact_duplicate_rows": 1068
+    },
+    "retention_rate_pct": 95.95
+  },
+  "split_metadata": {
+    "time_column": "period_start",
+    "total_periods": 58,
+    "train": {
+      "start": "2009-11-30 00:00:00",
+      "end": "2010-08-30 00:00:00",
+      "row_count": 2000,
+      "period_count": 40
+    },
+    "validation": {
+      "start": "2010-09-06 00:00:00",
+      "end": "2010-11-01 00:00:00",
+      "row_count": 450,
+      "period_count": 9
+    },
+    "test": {
+      "start": "2010-11-08 00:00:00",
+      "end": "2011-01-03 00:00:00",
+      "row_count": 450,
+      "period_count": 9
+    }
+  },
+  "artifacts": {
+    "sales_observations_parquet": {
+      "path": "data/processed/sales_observations.parquet",
+      "sha256": "324aa4abe6a2a25deb164dcf34467446d2080c8df737c8a724d86d7e039ccfe1"
+    },
+    "demand_timeseries_parquet": {
+      "path": "data/processed/demand_timeseries.parquet",
+      "sha256": "bcf3624d7a129bd6af3dbd8baf723af29a8d5ddb1a9275ee3eda43e381b616d8"
+    },
+    "test_predictions_parquet": {
+      "path": "artifacts/test_predictions.parquet",
+      "sha256": "5b36bb3b710e209f580c23e59acaee0acaaaa4c13e493f94be4315755b47e90f"
+    },
+    "model_comparison_json": {
+      "path": "artifacts/model_comparison.json",
+      "sha256": "d56cc2c09d11d1d992db9e10cf45c0b463a17418ef409eabb264c20f7704315d"
+    }
+  }
+}

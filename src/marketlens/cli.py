@@ -17,6 +17,14 @@ from marketlens.datasets.manifests import (
 )
 from marketlens.datasets.profiler import TabularDataProfiler
 from marketlens.datasets.registry import DatasetRegistry
+from marketlens.data.aggregation import aggregate_to_demand_series
+from marketlens.data.canonicalize import canonicalize_uci_transactions
+from marketlens.data.cleaning import clean_uci_transactions
+from marketlens.data.loaders import load_uci_raw_transactions
+from marketlens.data.split import chronological_split
+from marketlens.features.temporal import build_temporal_features
+from marketlens.forecasting.artifacts import save_evaluation_artifacts, save_processed_datasets
+from marketlens.forecasting.evaluate import train_and_evaluate_models
 from marketlens.logging_config import configure_logging, get_logger
 
 logger = get_logger("marketlens.cli")
@@ -185,6 +193,97 @@ def cmd_datasets_profile(args: argparse.Namespace) -> int:
         return 3
 
 
+def cmd_forecast_pipeline(args: argparse.Namespace) -> int:
+    """Execute end-to-end data processing, feature engineering, and baseline forecasting."""
+    root = get_project_root()
+    print("=" * 80)
+    print("MARKETLENS AI — DATA PROCESSING & BASELINE FORECASTING PIPELINE")
+    print("=" * 80)
+
+    try:
+        # 1. Load raw data
+        raw_df = load_uci_raw_transactions(sample_rows_per_sheet=args.sample_rows)
+
+        # 2. Clean & audit exclusions
+        clean_df, audit = clean_uci_transactions(raw_df)
+
+        # 3. Canonicalize
+        sales_df, catalog_df = canonicalize_uci_transactions(clean_df)
+
+        # 4. Aggregate to regular demand series
+        demand_df = aggregate_to_demand_series(
+            canonical_sales=sales_df,
+            freq=args.freq,
+            min_active_periods=args.min_active,
+            top_n_products=args.top_products,
+        )
+
+        # 5. Persist processed datasets to Parquet
+        saved_paths = save_processed_datasets(sales_df, demand_df)
+        print(f"✓ Saved canonical sales to: {saved_paths['sales_observations']}")
+        print(f"✓ Saved demand time-series to: {saved_paths['demand_timeseries']}")
+
+        # 6. Feature engineering (leakage-safe)
+        features_df = build_temporal_features(
+            demand_df=demand_df,
+            target_col="units_sold",
+            price_col="mean_unit_price",
+            time_col="period_start",
+            product_id_col="product_id",
+            horizon=args.horizon,
+        )
+
+        # 7. Chronological splitting
+        train_df, val_df, test_df, split_meta = chronological_split(
+            features_df,
+            time_col="period_start",
+            train_ratio=0.70,
+            val_ratio=0.15,
+            test_ratio=0.15,
+        )
+
+        feature_cols = [
+            c
+            for c in features_df.columns
+            if c.startswith("target_lag_")
+            or c.startswith("rolling_")
+            or c.startswith("price_")
+            or c.startswith("cal_")
+            or c in ["sin_month", "cos_month"]
+        ]
+
+        # 8. Train & Evaluate models
+        metrics_df, preds_df, _ = train_and_evaluate_models(
+            train_df=train_df,
+            test_df=test_df,
+            feature_cols=feature_cols,
+            target_col="units_sold",
+            random_seed=42,
+        )
+
+        # 9. Save artifacts and derived manifest
+        artifacts = save_evaluation_artifacts(
+            metrics_df=metrics_df,
+            predictions_df=preds_df,
+            split_metadata=split_meta,
+            cleaning_audit=audit,
+        )
+
+        print("\n" + "=" * 80)
+        print("FINAL BASELINE MODEL COMPARISON (Held-Out Test Set):")
+        print("=" * 80)
+        print(metrics_df.to_string(index=False))
+        print("-" * 80)
+        print(f"Artifacts successfully saved to: artifacts/")
+        print(f"Derived lineage manifest saved to: {artifacts['derived_manifest']}")
+        return 0
+
+    except Exception as e:
+        print(f"Pipeline error: {e}", file=sys.stderr)
+        logger.exception("Forecasting pipeline failed.")
+        return 3
+
+
 def main(args: list[str] | None = None) -> int:
     """CLI entry point for MarketLens AI."""
     configure_logging()
@@ -218,6 +317,19 @@ def main(args: list[str] | None = None) -> int:
     profile_parser.add_argument("--source", required=True, help="Dataset identifier (e.g. uci_online_retail_ii)")
     profile_parser.add_argument("--sample", type=int, default=100000, help="Max rows to profile (default: 100,000 for memory safety)")
     profile_parser.set_defaults(func=cmd_datasets_profile)
+
+    # forecast command group
+    forecast_parser = subparsers.add_parser("forecast", help="Forecasting pipelines, training, and evaluation")
+    forecast_sub = forecast_parser.add_subparsers(dest="subcommand", required=True)
+
+    # forecast pipeline
+    pipeline_parser = forecast_sub.add_parser("pipeline", help="Run end-to-end data processing, feature engineering, and model evaluation")
+    pipeline_parser.add_argument("--sample-rows", type=int, default=50000, help="Sample rows per sheet (default: 50,000 for fast local execution; 0 for all)")
+    pipeline_parser.add_argument("--freq", default="W-MON", help="Time aggregation grain (default: 'W-MON' for weekly)")
+    pipeline_parser.add_argument("--top-products", type=int, default=50, help="Number of top volume products to model (default: 50)")
+    pipeline_parser.add_argument("--min-active", type=int, default=10, help="Minimum active periods to keep a product (default: 10)")
+    pipeline_parser.add_argument("--horizon", type=int, default=1, help="Forecast horizon steps ahead (default: 1)")
+    pipeline_parser.set_defaults(func=cmd_forecast_pipeline)
 
     parsed = parser.parse_args(args)
     return parsed.func(parsed)
